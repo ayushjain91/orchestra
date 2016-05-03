@@ -197,9 +197,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("path", type=str,
-                        help="Path to data: relative to ../data",
+                        help="Path to directory containing " +
+                        "hit data: relative to ../data",
                         default="scenes")
-    parser.add_argument('--categorization', action='store_true')
+    parser.add_argument('--categorization', help='Include this if' +
+                        ' you want to include the categorization phase',
+                        action='store_true')
     arguments = parser.parse_args()
 
     hits_directory = './../data/' + arguments.path + '/'
