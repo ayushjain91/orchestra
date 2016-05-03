@@ -1,11 +1,6 @@
 from __future__ import division
 import random
-import os
-import glob
 import scipy.io as sio
-import ast
-import itertools
-import random
 
 
 class Clustering(object):
@@ -47,6 +42,7 @@ class Clustering(object):
             item.ground_truth_label = item_url.split("/")[-1]
             self.clustering_array[cluster_number].add_item(item)
 
+
 class Cluster(object):
     def __init__(self):
         self.item_array = []
@@ -72,13 +68,13 @@ class Cluster(object):
             return len(set(self.item_array) - set(self.item_array)) == 0
         return NotImplemented
 
-
     def __hash__(self):
         sorted_array = sorted(self.item_array)
         str = ''
         for item in sorted_array:
             str += item.url
         return hash(str)
+
 
 class Item(object):
     def __init__(self, url=""):
@@ -102,6 +98,7 @@ class Item(object):
         tokens = self.url.split("/")
         return tokens[-1]
 
+
 class HITResult(object):
     def __init__(self):
         self.hitID = ""
@@ -109,9 +106,11 @@ class HITResult(object):
         self.clustering = None
         self.time_taken = 0
 
+
 class HITDict(object):
     def __init__(self):
         self.dict = {}
+
 
 class Hierarchy(object):
     def __init__(self, clique=None):
@@ -120,7 +119,6 @@ class Hierarchy(object):
         if clique is not None:
             self.construct_hierarchy(clique)
         self.node_worker = {}
-
 
     def construct_hierarchy(self, clique=None):
         clusters = []
@@ -144,7 +142,7 @@ class Hierarchy(object):
         for cluster in clusters:
             node = HierarchyNode()
             node.item_array = list(cluster.item_array)
-            node.numSplit += cluster_worker[cluster] 
+            node.numSplit += cluster_worker[cluster]
             self.nodes.append(node)
 
         for node1 in self.nodes:
@@ -171,7 +169,6 @@ class Hierarchy(object):
                 continue
             l = []
             for item in node.item_array:
-                url_tokens = item.url.split("/")
                 l.append(item.url)
             print str(list(set(l)))
 
@@ -186,12 +183,12 @@ class Hierarchy(object):
 
     def print_all_nodes(self):
         for node in self.nodes:
-            print str(node.get_ground_truth_labels()) + ' ' + str(len(node.item_array)), node.numSplit#, [a.url for a in node.item_array]
+            # , [a.url for a in node.item_array]
+            print str(node.get_ground_truth_labels()) + ' ' + str(len(node.item_array)), node.numSplit
 
     def print_max_likelihood_frontier(self):
         frontier = self.maxLikelihoodFrontier()
         self.print_frontier(frontier)
-        
 
     def print_frontier(self, frontier):
         import random
@@ -235,7 +232,7 @@ class Hierarchy(object):
     def _add_leaf(self, curr_node, leaf, common, attach):
         # add the leaf node items to current node
         curr_node.item_array.extend(leaf.item_array)
-        
+
         # get rid of duplicates
         curr_node.item_array = list(set(curr_node.item_array))
         traversed = False
@@ -319,7 +316,6 @@ class Hierarchy(object):
         b = set(b)
         return A - b
 
-
     def maxLikelihoodFrontier(self):
         self.root.calcNumSplitsInSubtree()
         return self.root.getMaxLikelihoodFrontierInSubtree()[0]
@@ -327,13 +323,9 @@ class Hierarchy(object):
     def getAllFrontiers(self, size):
         return self.root.getAllFrontiers(size)
 
-    def findFrontierLikelihood(self,frontier):
+    def findFrontierLikelihood(self, frontier):
         self.maxLikelihoodFrontier()
         return self.root.findFrontierLikelihood(frontier)
-
-
-
-
 
 
 class HierarchyNode(object):
@@ -341,7 +333,7 @@ class HierarchyNode(object):
         self.item_array = []
         self.children = []
         self.parent = None
-        self.numSplit = 0 # Number of workers who split this node
+        self.numSplit = 0  # Number of workers who split this node
         self.numSplitInSubtree = 0
         self.probNotSplit = 0
 
@@ -372,43 +364,43 @@ class HierarchyNode(object):
             frontier = [self]
             return (frontier, 1)
 
-        prob = 1 - (self.numSplit*1.0/self.numSplitInSubtree)
-        self.probNotSplit =  prob
+        prob = 1 - (self.numSplit * 1.0 / self.numSplitInSubtree)
+        self.probNotSplit = prob
         front = []
         for child in self.children:
-            (best_frontier, frontier_prob) = child.getMaxLikelihoodFrontierInSubtree()
-            prob = prob*frontier_prob
+            (best_frontier,
+             frontier_prob) = child.getMaxLikelihoodFrontierInSubtree()
+            prob = prob * frontier_prob
             front.extend(best_frontier)
 
-        prob_notSplitting = (self.numSplit*1.0/self.numSplitInSubtree)
+        prob_notSplitting = (self.numSplit * 1.0 / self.numSplitInSubtree)
         if prob <= prob_notSplitting:
             frontier = [self]
             return (frontier, prob_notSplitting)
 
         return (front, prob)
-    
+
     def getAllFrontiers(self, size):
-        
+
         num_children = len(self.children)
-        if size==1:
+        if size == 1:
             return [[self]]
 
         elif num_children == 0:
             return []
 
-        
         all_ways_splitting = splitItems(size, num_children)[1]
         all_frontiers = []
-        #print size, num_children
+        # print size, num_children
         for split in all_ways_splitting:
             idx = 0
             frontiers = [[]]
             flag = True
             for child in self.children:
-                
+
                 child_frontiers = child.getAllFrontiers(split[idx])
-                idx+=1
-                if child_frontiers==[]:
+                idx += 1
+                if child_frontiers == []:
                     flag = False
                     break
                 _frontiers = []
@@ -421,7 +413,7 @@ class HierarchyNode(object):
             if flag:
                 all_frontiers.extend(frontiers)
 
-        #print all([len(a)==size for a in all_frontiers])
+        # print all([len(a)==size for a in all_frontiers])
         return all_frontiers
 
     def findFrontierLikelihood(self, frontier):
@@ -430,24 +422,21 @@ class HierarchyNode(object):
 
         prob = self.probNotSplit
         for child in self.children:
-            prob = prob*child.findFrontierLikelihood(frontier)
+            prob = prob * child.findFrontierLikelihood(frontier)
 
         return prob
 
 
-    
-
-
 def splitItems(numItems, numBins):
     splits = []
-    if numBins==0 and numItems!=0:
+    if numBins == 0 and numItems != 0:
         return False, None
-    elif numBins==0:
+    elif numBins == 0:
         return True, None
-    for i in range(1,numItems - numBins + 2):
-        s_tup = splitItems(numItems - i, numBins-1)
+    for i in range(1, numItems - numBins + 2):
+        s_tup = splitItems(numItems - i, numBins - 1)
         if s_tup[0]:
-            if s_tup[1]!=None:
+            if s_tup[1] != None:
                 s = s_tup[1]
                 for _s in s:
                     _scopy = _s
@@ -456,7 +445,7 @@ def splitItems(numItems, numBins):
             else:
                 splits.append([i])
 
-    return len(splits)!=0, splits
+    return len(splits) != 0, splits
 
 
 def custom_metric(clustering1, clustering2):
@@ -487,7 +476,6 @@ def custom_metric(clustering1, clustering2):
             else:
                 score -= 1
     return score / (n * (n - 1) / 2)
-
 
 
 if __name__ == '__main__':
