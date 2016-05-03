@@ -7,4 +7,5 @@ $ cd src
 $ python run_orchestra.py scenes/intelligent_samples --categorization
 ```
 This will output precision, recall, accuracy and number of unclustered items for the scenes dataset. In addition, you'll also see visualization of confusion matrix in data/scenes/intelligent_samples/categorization. 
-See `python run_orchestra.py -h` to get information on the command line options
+
+See `python run_orchestra.py -h` for an explanation of the command line options.
