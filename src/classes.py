@@ -184,7 +184,8 @@ class Hierarchy(object):
     def print_all_nodes(self):
         for node in self.nodes:
             # , [a.url for a in node.item_array]
-            print str(node.get_ground_truth_labels()) + ' ' + str(len(node.item_array)), node.numSplit
+            print str(node.get_ground_truth_labels()) + ' '
+            + str(len(node.item_array)), node.numSplit
 
     def print_max_likelihood_frontier(self):
         frontier = self.maxLikelihoodFrontier()
