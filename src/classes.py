@@ -12,6 +12,9 @@ class Clustering(object):
     def add_cluster(self, cluster):
         self.clustering_array.append(cluster)
 
+    def __iter__(self):
+        return iter(self.clustering_array)
+
     def __getitem__(self, index):
         return self.clustering_array[index]
 
@@ -44,8 +47,11 @@ class Clustering(object):
 
 
 class Cluster(object):
-    def __init__(self):
-        self.item_array = []
+    def __init__(self, items=None):
+        if items is None:
+            self.item_array = []
+        else:
+            self.item_array = list(items)
 
     def add_item(self, item):
         self.item_array.append(item)
@@ -97,6 +103,12 @@ class Item(object):
     def get_item_id(self):
         tokens = self.url.split("/")
         return tokens[-1]
+
+    def __str__(self):
+        return self.url
+
+    def __repr__(self):
+        return self.url
 
 
 class HITResult(object):
