@@ -17,7 +17,9 @@ class HittingSet:
         res = set()
         removed = defaultdict(lambda: 0)
         for s in self.hitting_sets:
-            removed_count = reduce(lambda x, y: removed[x] + removed[y], s)
+            removed_count = 0
+            for item in s:
+                removed_count += removed[item]
             if removed_count == 0:
                 for item in s:
                     removed[item] = 1

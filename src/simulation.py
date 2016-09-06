@@ -1,3 +1,4 @@
+from __future__ import division
 from random import randint, random as rand
 from os.path import isfile
 from numpy.random import multinomial, dirichlet
@@ -8,7 +9,9 @@ from evaluation_utils import *
 from read_utils import *
 from collections import defaultdict
 from plot_utils import *
-
+from hitting_set import *
+from algo_utils import *
+import matplotlib.pyplot as plt
 
 def generate_items(num_items=35, hit_num=1,
                    num_perspectives=4, num_categories=8, overwrite=False):
@@ -17,7 +20,7 @@ def generate_items(num_items=35, hit_num=1,
         raise NameError("Trying to overwrite simulation items." +
                         " Please ensure you have a copy")
     with open(hit_filename, "w") as hit_file:
-        for item in ranged(num_items):
+        for item in range(num_items):
             item_name = str(item) + "_"
             for perspective in range(num_perspectives):
                 leaf_num = randint(7, 14)
@@ -48,6 +51,7 @@ def generate_worker_response(
     hit_filename = "../data/simulation/hit{}.txt".format(hit_num)
     string = ''
 
+    worker_responses = []
     for worker in range(num_responses):
         perspective = nonzero(multinomial(1, affinities))[0][0]
         nodes = [1, 2]
@@ -104,12 +108,17 @@ def generate_worker_response(
             cluster_string += ']'
             clustering_str += cluster_string
         string += str(hit_num) + "," + clustering_str + ",1000\n"
+
+        worker_responses.append(clustering)
+
     result_filename = "../data/simulation/results/results.txt"
     if isfile(result_filename) and not overwrite:
         raise NameError("Worker responses already constructed")
     result_file = open("../data/simulation/results/results.txt", "w")
     result_file.write(string)
     result_file.close()
+
+    return worker_responses
 
 
 def run_process(hits_directory,
@@ -238,8 +247,71 @@ def worker_errors_simulation():
     plot_multiple_line(xs, clique_sizes, 
         None, 'Error rate of inaccurate workers', 'Size of max clique', legends, fig_name)
 
+# Given worker responses (raw data), constructs an array of Clustering objects (in classes.py).
+def construct_clustering_objects(worker_responses):
+    res = []
+    for clustering in worker_responses:
+        new_clustering = Clustering()
+        for cluster in clustering:
+            new_cluster = Cluster()
+            for item in cluster:
+                new_cluster.add_item(Item(str(item)))
+            new_clustering.add_cluster(new_cluster)
+        res.append(new_clustering)
+    return res
 
+def single_run_consistency_approx_simulation(worker_responses):
+    res = defaultdict(lambda: 100000) # initialize with some large values
+    new_worker_responses = construct_clustering_objects(worker_responses)
+    num_workers = len(new_worker_responses)
+    for bitmask in range(1 << num_workers):
+        response_subset = []
+        for i in range(num_workers):
+            if (bitmask & (1 << i)) > 0:
+                response_subset.append(new_worker_responses[i])
+        hitting_set = build_hitting_set_n(response_subset)
+        approx_ans = len(hitting_set.solve_approx())
+        for i in range(1, len(response_subset) + 1):
+            res[i] = min(res[i], approx_ans)
+    return res
 
+def average(data):
+    n = len(data)
+    res = defaultdict(lambda : 0.0)
+    for single_response in data:
+        for (x, y) in single_response.iteritems():
+            res[x] += y / n
+    return (res.keys(), res.values())
 
+def multiple_runs_consistency_approx_simulation(num_trials, num_responses=10, hit_num=1, affinities=[1.0, 0, 0, 0], poor_worker_prob=0.5, poor_worker_quality=0.1):
+    res = []
+    for i in range(num_trials):
+        worker_responses = generate_worker_response(num_responses=num_responses, hit_num=hit_num, affinities=affinities, poor_worker_prob=poor_worker_prob, poor_worker_quality=poor_worker_quality)
+        single_response = single_run_consistency_approx_simulation(worker_responses)
+        res.append(single_response)
+        print "Trial " + str(i) + " done"
+    return average(res)
+
+def create_line_graph(file_path, title, x_label, y_label, x_data, y_data):
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.plot(x_data, y_data)
+    plt.savefig(file_path)
+    plt.show()
+
+def save_graph_data(file_path, x_data, y_data):
+    if len(x_data) != len(y_data):
+        raise ValueError("Invalid data")
+    with open(file_path, "w+") as f:
+        for i in range(len(x_data)):
+            f.write(str(x_data[i]) + " " + str(y_data[i]) + "\n")
+
+#generate_items(num_items=10, hit_num=2)
 # num_workers_simulation()
-worker_errors_simulation()
+# worker_errors_simulation()
+#print consistency_approx_simulation(generate_worker_response(num_responses = 10, hit_num=1, affinities = [1.0, 0, 0, 0], poor_worker_prob = 0.5, poor_worker_quality = 0.1))
+
+data = multiple_runs_consistency_approx_simulation(num_trials=50, poor_worker_quality=0.2)
+save_graph_data("../data/simulation/approx2.txt", data[0], data[1])
+create_line_graph("../data/simulation/approx2.png", "Worker Errors for N-consistency", "Clique sizes", "Items to remove (approx)", data[0], data[1])
