@@ -1,3 +1,4 @@
+from __future__ import division
 from random import randint, random as rand
 from os.path import isfile
 from numpy.random import multinomial, dirichlet
@@ -8,11 +9,17 @@ from evaluation_utils import *
 from read_utils import *
 from collections import defaultdict
 from plot_utils import *
+<<<<<<< HEAD
 
 from hitting_set import *
 from algo_utils import *
 import matplotlib.pyplot as plt
 
+=======
+from hitting_set import *
+from algo_utils import *
+import matplotlib.pyplot as plt
+>>>>>>> 2a25541b53896e6d0f5e85a8adeb7393f65b8835
 
 def generate_items(num_items=35, hit_num=1,
                    num_perspectives=4, num_categories=8, overwrite=False):
@@ -52,6 +59,7 @@ def generate_worker_response(
     hit_filename = "../data/simulation/hit{}.txt".format(hit_num)
     string = ''
 
+    worker_responses = []
     for worker in range(num_responses):
         perspective = nonzero(multinomial(1, affinities))[0][0]
         nodes = [1, 2]
@@ -108,12 +116,15 @@ def generate_worker_response(
             cluster_string += ']'
             clustering_str += cluster_string
         string += str(hit_num) + "," + clustering_str + ",1000\n"
+        worker_responses.append(clustering)
     result_filename = "../data/simulation/{}/results/results.txt".format(len(affinities))
     if isfile(result_filename) and not overwrite:
         raise NameError("Worker responses already constructed")
     result_file = open("../data/simulation/results/results.txt", "w")
     result_file.write(string)
     result_file.close()
+
+    return worker_responses
 
 
 def run_process(hits_directory,
@@ -245,7 +256,6 @@ def worker_errors_simulation():
     fig_name = 'worker_errors_simulation_clique_size'
     plot_multiple_line(xs, clique_sizes, 
         None, 'P_e', 'Size of max clique', legends, fig_name, scale=1.0/3.0)
-
 
 # Given worker responses (raw data), constructs an array of Clustering objects (in classes.py).
 def construct_clustering_objects(worker_responses):
